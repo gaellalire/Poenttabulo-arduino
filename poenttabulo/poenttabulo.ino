@@ -9,22 +9,22 @@
 
 #include <ArduinoJson.h>
 #include <ArduinoBLE.h>
-#include <Adafruit_NeoPixel.h>                                    // install Adafruit library from library manager
+#include <Adafruit_NeoPixel.h>  // install Adafruit library from library manager
 typedef uint64_t segsize_t;
 #include <Noiasca_NeopixelDisplay.h>  // download library from: http://werner.rothschopf.net/202005_arduino_neopixel_display_en.htm
 
-const byte ledPin = 2;          // Which pin on the Arduino is connected to the NeoPixels?
-const byte numDigits = 1;       // How many digits (numbers) are available on each display
-const byte pixelPerDigit = 48;  // all pixels, including decimal point pixels if available at each digit
-const byte smallPixelPerDigit = 32;  // all pixels, including decimal point pixels if available at each digit
+const byte ledPin = 2;                 // Which pin on the Arduino is connected to the NeoPixels?
+
+const byte numDigits = 1;              // How many digits (numbers) are available on each display
+
+const byte pixelPerDigit = 48;         // all pixels, including decimal point pixels if available at each digit
+const byte smallPixelPerDigit = 32;    // all pixels, including decimal point pixels if available at each digit
 const byte oneOnlyPixelPerDigit = 16;  // all pixels, including decimal point pixels if available at each digit
-const byte addPixels = 0;       // unregular additional pixels to be added to the strip
 
-const byte startPixelHome = 0;    // start pixel of display A
-const byte startPixelGuest = 176;  // start pixel of display B (assumption: 2 x 14 used by centHome + 4 additional Pixels)
+const byte startPixelHome = 0;
+const byte endPixelGuest = 256;
 
-
-const uint16_t ledCount(256 /* pixelPerDigit * numDigits * 2 + addPixels*/);
+const uint16_t ledCount(endPixelGuest);
 /*
    Segments are named and orded like this
 
@@ -53,11 +53,11 @@ const segsize_t smallSegment[8]{
   bit(16) | bit(15) | bit(0),   // SEG_A
   bit(18) | bit(17) | bit(16),  // SEG_B
   bit(20) | bit(19) | bit(18),  // SEG_C
-  bit(20) | bit(11) | bit(4),    // SEG_D
-  bit(4) | bit(3) | bit(2) ,      // SEG_E
-  bit(2) | bit(1) | bit(0),      // SEG_F
+  bit(20) | bit(11) | bit(4),   // SEG_D
+  bit(4) | bit(3) | bit(2),     // SEG_E
+  bit(2) | bit(1) | bit(0),     // SEG_F
   bit(18) | bit(13) | bit(2),   // SEG_G
-  0                                       // SEG_DP
+  0                             // SEG_DP
 };
 
 
@@ -82,12 +82,10 @@ segsize_t smallSegmentOdd[8];
 
 void moveZigzag(const segsize_t* segment, segsize_t* dsegment, int height, int verticalOffset, int horizontalOffset, int padding) {
   for (int s = 0; s < 8; s++) {
-    Serial.println(String("Segment ") + String(s));
     segsize_t n = segment[s];
     segsize_t d = 0;
     for (int i = 0; i < sizeof(segsize_t) * 8; i++) {
       if ((bit(i) & n) != 0) {
-        Serial.println(String(n) + String(" Bit ") + String(i));
         int b;
         if ((i / height) % 2 == 0) {
           b = i + verticalOffset;
@@ -100,7 +98,6 @@ void moveZigzag(const segsize_t* segment, segsize_t* dsegment, int height, int v
           b += height * horizontalOffset;
         }
         b += padding;
-        Serial.println(String("New Bitb ") + String(b));
         if (b >= 0 && b < sizeof(segsize_t) * 8) {
           d |= bit(b);
         }
@@ -113,50 +110,34 @@ void moveZigzag(const segsize_t* segment, segsize_t* dsegment, int height, int v
 
 Adafruit_NeoPixel strip(ledCount, ledPin, NEO_GRB + NEO_KHZ800);
 
-Noiasca_NeopixelDisplay centHome(strip, segmentOneOnly, numDigits, oneOnlyPixelPerDigit, startPixelHome);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay tenHome(strip, segment, numDigits, pixelPerDigit, startPixelHome+ 2*8);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay unitHome(strip, segmentOdd, numDigits, pixelPerDigit, startPixelHome+ 7*8);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay setHome(strip, smallSegment, numDigits, smallPixelPerDigit, startPixelHome+ 12*8);  // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay centHome(strip, segmentOneOnly, numDigits, oneOnlyPixelPerDigit, startPixelHome);      // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay tenHome(strip, segment, numDigits, pixelPerDigit, startPixelHome + 2 * 8);             // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay unitHome(strip, segmentOdd, numDigits, pixelPerDigit, startPixelHome + 7 * 8);         // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay setHome(strip, smallSegment, numDigits, smallPixelPerDigit, startPixelHome + 12 * 8);  // create display object, handover the name of your strip as first parameter!
 
-Noiasca_NeopixelDisplay setGuest(strip, smallSegmentOdd, numDigits, smallPixelPerDigit, 256 - 15*8);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay centGuest(strip, segmentOneOnlyOdd, numDigits, oneOnlyPixelPerDigit, 256 - 11*8);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay tenGuest(strip, segmentOdd, numDigits, pixelPerDigit, 256 - 9*8);  // create display object, handover the name of your strip as first parameter!
-Noiasca_NeopixelDisplay unitGuest(strip, segment, numDigits, pixelPerDigit, 256 - 4*8);  // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay setGuest(strip, smallSegmentOdd, numDigits, smallPixelPerDigit, endPixelGuest - 15 * 8);       // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay centGuest(strip, segmentOneOnlyOdd, numDigits, oneOnlyPixelPerDigit, endPixelGuest - 11 * 8);  // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay tenGuest(strip, segmentOdd, numDigits, pixelPerDigit, endPixelGuest - 9 * 8);                  // create display object, handover the name of your strip as first parameter!
+Noiasca_NeopixelDisplay unitGuest(strip, segment, numDigits, pixelPerDigit, endPixelGuest - 4 * 8);                    // create display object, handover the name of your strip as first parameter!
 
-
-
-// create service
 BLEService rfpeliloService("1C144F52-3702-4EFF-9970-C3FECAB28072");
-// 5b79ded9-8881-4628-b5cd-dd9ac8b69c53
-// create TX characteristic and allow remote device to get notifications
-BLECharacteristic txCharacteristic("5b79ded0-8881-4628-b5cd-dd9ac8b69c53",
+
+BLECharacteristic txCharacteristic("1C144F53-3702-4EFF-9970-C3FECAB28072",
                                    BLEWrite, BLE_CHARACTERISTIC_SIZE);
-// create RX characteristic and allow remote device to read and write
-/*
-BLECharacteristic rxCharacteristic("5b79ded1-8881-4628-b5cd-dd9ac8b69c53",
-                                   BLERead | BLEIndicate, BLE_CHARACTERISTIC_SIZE);
-*/
 
 void blePeripheralConnectHandler(BLEDevice central) {
   // central connected event handler
-  Serial.println(String("blePeripheralConnectHandler"));
 }
 
 void blePeripheralDisconnectHandler(BLEDevice central) {
   // central disconnected event handler
-  Serial.println(String("blePeripheralDisconnectHandler"));
 }
 
 void txCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
   int valueLength = characteristic.valueLength();
   JsonDocument doc;
 
-  // JSON input string.
-  // const char* json = "{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
-
-  // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, characteristic.value(), valueLength);
-  Serial.println(String("txCharacteristicWritten: ") + String(doc["home"]));
   int homePoint = doc["home"]["point"];
   int homeSet = doc["home"]["set"];
   int guestPoint = doc["guest"]["point"];
@@ -175,20 +156,18 @@ void txCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic
   } else {
     centHome.print(" ");
   }
-    tenHome.print(secondDigitHomePoint);
-    unitHome.print(firstDigitHomePoint);
-    setHome.print(homeSet % 10);
+  tenHome.print(secondDigitHomePoint);
+  unitHome.print(firstDigitHomePoint);
+  setHome.print(homeSet % 10);
 
-    setGuest.print(guestSet % 10);
-
+  setGuest.print(guestSet % 10);
   if (guestPoint >= 100) {
     centGuest.print("1");
   } else {
     centGuest.print(" ");
   }
-    tenGuest.print(secondDigitGuestPoint);
-    unitGuest.print(firstDigitGuestPoint);
-
+  tenGuest.print(secondDigitGuestPoint);
+  unitGuest.print(firstDigitGuestPoint);
 }
 
 
@@ -196,16 +175,16 @@ void setup() {
 
   Serial.begin(115200);
   while (!Serial) {}
-  moveZigzag(segment, segmentOdd,     8, 0, 1, -8);
+  moveZigzag(segment, segmentOdd, 8, 0, 1, -8);
   moveZigzag(segment, segmentOneOnly, 8, 0, -3, 0);
   moveZigzag(segmentOneOnly, segmentOneOnlyOdd, 8, 0, 1, -8);
   moveZigzag(smallSegment, smallSegmentOdd, 8, 2, 1, -8);
 
   if (!BLE.begin()) {
     Serial.println("Starting Bluetooth® Low Energy module failed!");
-    while (1);
+    while (1)
+      ;
   }
-    Serial.println("BLE OK");
 
   // set the local name that the peripheral advertises
   BLE.setLocalName(BOARD_NAME);
@@ -213,7 +192,6 @@ void setup() {
   BLE.setAdvertisedService(rfpeliloService);
 
   // add the characteristics to the service
-  // rfpeliloService.addCharacteristic(rxCharacteristic);
   rfpeliloService.addCharacteristic(txCharacteristic);
 
   // add the service
@@ -224,11 +202,11 @@ void setup() {
 
   txCharacteristic.setEventHandler(BLEWritten, txCharacteristicWritten);
 
-
   // start advertising
   if (!BLE.advertise()) {
     Serial.println("Advertise Bluetooth® Low Energy module failed!");
-    while (1);
+    while (1)
+      ;
   }
 
   strip.begin();            // INITIALIZE NeoPixel strip object (REQUIRED)
@@ -246,12 +224,12 @@ void setup() {
   tenGuest.setColorFont(POINT_COLOR);
   unitGuest.setColorFont(POINT_COLOR);
 
-  centHome.print("0");
+  centHome.print("1");
   tenHome.print("0");
   unitHome.print("0");
   setHome.print("0");
 
-  centGuest.print("0");
+  centGuest.print("1");
   tenGuest.print("0");
   unitGuest.print("0");
   setGuest.print("0");
