@@ -21,8 +21,8 @@ const byte pixelPerDigit = 48;         // all pixels, including decimal point pi
 const byte smallPixelPerDigit = 32;    // all pixels, including decimal point pixels if available at each digit
 const byte oneOnlyPixelPerDigit = 16;  // all pixels, including decimal point pixels if available at each digit
 
-const byte startPixelHome = 0;
-const byte endPixelGuest = 256;
+const uint16_t startPixelHome = 0;
+const uint16_t endPixelGuest = 256;
 
 const uint16_t ledCount(endPixelGuest);
 /*
