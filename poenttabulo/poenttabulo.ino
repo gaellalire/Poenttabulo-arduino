@@ -17,9 +17,9 @@ const byte ledPin = 2;                 // Which pin on the Arduino is connected 
 
 const byte numDigits = 1;              // How many digits (numbers) are available on each display
 
-const byte pixelPerDigit = 48;         // all pixels, including decimal point pixels if available at each digit
-const byte smallPixelPerDigit = 32;    // all pixels, including decimal point pixels if available at each digit
-const byte oneOnlyPixelPerDigit = 16;  // all pixels, including decimal point pixels if available at each digit
+const byte pixelPerDigit = 32;         // all pixels, including decimal point pixels if available at each digit
+const byte smallPixelPerDigit = 24;    // all pixels, including decimal point pixels if available at each digit
+const byte oneOnlyPixelPerDigit = 8;  // all pixels, including decimal point pixels if available at each digit
 
 const uint16_t startPixelHome = 0;
 const uint16_t endPixelGuest = 256;
@@ -133,6 +133,15 @@ void blePeripheralDisconnectHandler(BLEDevice central) {
   // central disconnected event handler
 }
 
+bool centHomePrinted = true;
+int tenHomePrinted = 0;
+int unitHomePrinted = 0;
+int setHomePrinted = 0;
+bool centGuestPrinted = true;
+int tenGuestPrinted = 0;
+int unitGuestPrinted = 0;
+int setGuestPrinted = 0;
+
 void txCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
   int valueLength = characteristic.valueLength();
   JsonDocument doc;
@@ -152,22 +161,52 @@ void txCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic
 
 
   if (homePoint >= 100) {
-    centHome.print("1");
+    if (!centHomePrinted) {
+      centHome.print("1");
+      centHomePrinted = true;
+    }
   } else {
-    centHome.print(" ");
+    if (centHomePrinted) {
+      centHome.print(" ");
+      centHomePrinted = false;
+    }
   }
-  tenHome.print(secondDigitHomePoint);
-  unitHome.print(firstDigitHomePoint);
-  setHome.print(homeSet % 10);
+  if (tenHomePrinted != secondDigitHomePoint) {
+    tenHome.print(secondDigitHomePoint);
+    tenHomePrinted = secondDigitHomePoint;
+  }
+  if (unitHomePrinted != firstDigitHomePoint) {
+    unitHome.print(firstDigitHomePoint);
+    unitHomePrinted = firstDigitHomePoint;
+  }
+  if (homeSet % 10 != setHomePrinted) {
+    setHome.print(homeSet % 10);
+    setHomePrinted = homeSet % 10;
+  }
 
-  setGuest.print(guestSet % 10);
-  if (guestPoint >= 100) {
-    centGuest.print("1");
-  } else {
-    centGuest.print(" ");
+  if (guestSet % 10 != setGuestPrinted) {
+    setGuest.print(guestSet % 10);
+    setGuestPrinted = guestSet % 10;
   }
-  tenGuest.print(secondDigitGuestPoint);
-  unitGuest.print(firstDigitGuestPoint);
+  if (guestPoint >= 100) {
+    if (!centGuestPrinted) {
+      centGuest.print("1");
+      centGuestPrinted = true;
+    }
+  } else {
+    if (centGuestPrinted) {
+      centGuest.print(" ");
+      centGuestPrinted = false;
+    }
+  }
+  if (tenGuestPrinted != secondDigitGuestPoint) {
+    tenGuest.print(secondDigitGuestPoint);
+    tenGuestPrinted = secondDigitGuestPoint;
+  }
+  if (unitGuestPrinted != firstDigitGuestPoint) {
+    unitGuest.print(firstDigitGuestPoint);
+    unitGuestPrinted = firstDigitGuestPoint;
+  }
 }
 
 
